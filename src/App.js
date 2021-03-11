@@ -1,12 +1,12 @@
 import './App.css';
 import { Todo } from './Todo';
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useIndexDB } from './useIndexDB';
 
 const App = () => {
 
   const taskInput = useRef();
-  const { data, saveIntoIndexDB, removeFromIndexDB } = useIndexDB();
+  const { data, saveIntoIndexDB } = useIndexDB();
 
   return (
     <div className="app-container">
@@ -20,7 +20,8 @@ const App = () => {
           (data.length <= 0) ? (<h2 className="empty-list" >There are no todos...</h2>) : 
           (
             // todos.map(todo => <h2 key={todo.id}>{ todo.description }</h2>)
-            data.map(( todo, index ) => <Todo key={todo.id} todo={todo} index={index} handle={removeFromIndexDB} />)
+            // data.map(( todo, index ) => <Todo key={todo.id} todo={todo} index={index} handle={removeFromIndexDB} />)
+            data.map(( todo, index ) => <Todo key={todo.id} todo={todo} index={index} handle={console.log("Hola mundo")} />)
           )
         }
       </div>

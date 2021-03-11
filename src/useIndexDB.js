@@ -3,31 +3,40 @@ import { useState, useEffect } from 'react';
 export const useIndexDB = () => {
 
   const [ data, setData ] = useState([]);
-  let request, database, objectStore;
+  let database, objectStore;
+
+  const initDB = async () => {
+
+    console.log("Inside initDB")
+    const request = await window.indexedDB.open('database', 1);
+
+    request.onerror = () => console.error("ERROR", request.error);
+    
+    request.onupgradeneeded = (event) => {
+      console.log("CREATE");
+      database = request.result;
+      console.log("DB: ", database);
+      objectStore = database.createObjectStore("todos", {keyPath: "id"});
+    };
+    
+    request.onsuccess = () => {
+      console.log("OPEN");
+      database = request.result;
+      console.log("DB inside onSuccess: ", database);
+      loadData();
+    };
+
+    return database;
+    
+  };
 
   useEffect(() => {
-    request = window.indexedDB.open('database', 1);
-    console.log("UE DB: ", database);
+    initDB();
+    console.log("DB inside UseEffect: ", database);
   }, []);
 
-  request.onerror = () => console.error("ERROR", request.error);
-    
-  request.onupgradeneeded = (event) => {
-    console.log("CREATE");
-    database = request.result;
-    console.log("DB: ", database);
-    objectStore = database.createObjectStore("todos", {keyPath: "id"});
-  };
-  
-  request.onsuccess = () => {
-    console.log("OPEN");
-    database = request.result;
-    console.log("DB: ", database);
-    loadData();
-  };
-
   //1) SAVE INTO DB
-  const saveIntoIndexDB = async (value) => {
+  const saveIntoIndexDB = (value) => {
     console.log("SAVE INTO INDEX");
     console.log("DB: ", database);
     const transaction = database.transaction(['todos'], 'readwrite');
