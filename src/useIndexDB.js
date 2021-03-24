@@ -1,67 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export const useIndexDB = () => {
 
   const [ data, setData ] = useState([]);
   let database, objectStore;
 
-  const initDB = () => {
-    return new Promise((resolve) => {
-      console.log("Inside initDB")
-      const request = window.indexedDB.open('database', 1);
-      
-      request.onerror = () => console.error("ERROR", request.error);
-      
-      request.onupgradeneeded = (event) => {
-        console.log("CREATE");
-        database = request.result;
-        console.log("DB: ", database);
-        objectStore = database.createObjectStore("todos", {keyPath: "id"});
-      };
-      
-      request.onsuccess = () => {
-        console.log("OPEN");
-        database = request.result;
-        console.log("DB inside onSuccess: ", database);
-        resolve(database);
-      };
-    });
-  };
-
-  useEffect(() => {
-    initDB()
-    .then(async db => {
-      console.log("Database inside useEffect :", db);
-      // loadData();
-    })
-  }, []);
-
   //1) SAVE INTO DB
-  const saveIntoIndexDB = (value) => {
-    console.log("SAVE INTO INDEX");
-    console.log("DB: ", database);
+  const add = (value) => new Promise((resolve, reject) => {
+    console.log("ADD");
     const transaction = database.transaction(['todos'], 'readwrite');
     const objectStore = transaction.objectStore('todos');
     let todo = { id:  `data-${data.length}`, description: value };
     const request = objectStore.add(todo);
-    // window.sessionStorage.setItem(`data-${data.length}`, value);
-    let tempData = [ ...data, {id: `data-${data.length}`, description: value} ];
-    setData(tempData);
-  };
 
-  //2) DELETE FROM DB
-  const removeFromIndexDB = (index, key) => {
-    window.sessionStorage.removeItem(key);
-    let tempData = [...data];
-    tempData.splice(index, 1);
-    setData(tempData);
-    console.log("Session Storage: ", window.sessionStorage);
-  }
+    transaction.onerror = (err) => {
+      console.log("TX ERROR: ", err);
+      reject(err)
+    }
 
-  //3) RETRIEVE FROM DB
-  const loadData = () => {
-    console.log("LOADING DATA");
-    console.log("DB: ", database);
+    transaction.oncomplete = (e) => {
+      console.log("TX COMPLETE: ", e);
+      let tempData = [ ...data, {id: `data-${data.length}`, description: value} ];
+      setData(tempData);
+      resolve(true)
+    }
+  })
+
+  //2) RETRIEVE FROM DB
+  const getData = () => {
+    console.log("GETDATA");
     let tempData = [];
     const transaction = database.transaction(['todos'], 'readonly');
     const objectStore = transaction.objectStore('todos');
@@ -81,18 +48,50 @@ export const useIndexDB = () => {
         setData(tempData);
       }
     }
-    // let tempData = [];
-    // for (const key in window.sessionStorage) {
-    //   if(key.includes('data'))
-    //     // console.log(`${key}: ${window.localStorage[key]}`);
-    
-    // }
   };
 
-  return {
-    data,
-    saveIntoIndexDB,
-    removeFromIndexDB
-  }
+  //3) REMOVE FROM DB
+  const remove = (key) => new Promise((resolve, reject) => {
+    console.log("REMOVE");
+    const transaction = database.transaction(['todos'], 'readwrite');
+    const objectStore = transaction.objectStore('todos');
+    const request = objectStore.delete(key);
+
+    transaction.onerror = (err) => {
+      console.log("TX ERROR: ", err);
+      reject(err)
+    }
+
+    transaction.oncomplete = (e) => {
+      console.log("TX COMPLETE: ", e);
+      resolve();
+    }
+  });
+
+  const init = () => new Promise((resolve) => {
+    console.log("INIT")
+    const request = window.indexedDB.open('database', 1);
+    
+    request.onerror = () => console.error("ERROR", request.error);
+    
+    request.onupgradeneeded = (event) => {
+      console.log("CREATE");
+      database = event.target.result;
+      objectStore = database.createObjectStore("todos", {keyPath: "description"});
+    };
+    
+    request.onsuccess = (event) => {
+      console.log("OPEN");
+      database = event.target.result;
+      database.add = add;
+      database.getData = getData;
+      database.remove = remove;
+      // getData();
+      // resolve({data, add, test});
+      resolve(database);
+    };
+  });
+
+  return { init, data }
 
 };

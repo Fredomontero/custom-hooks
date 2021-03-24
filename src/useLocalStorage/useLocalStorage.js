@@ -17,19 +17,17 @@ export const useLocalStorage = () => {
     setData(tempData);
   };
 
-  const removeFromLocalStorage = (index, key) => {
-    window.localStorage.removeItem(key);
+  const removeFromLocalStorage = (index, todo) => {
+    window.localStorage.removeItem(todo.id);
     let tempData = [...data];
     tempData.splice(index, 1);
     setData(tempData);
-    console.log("Local Storage: ", window.localStorage);
   }
 
   const loadData = () => {
     let tempData = [];
     for (const key in window.localStorage) {
       if(key.includes('data'))
-        // console.log(`${key}: ${window.localStorage[key]}`);
         tempData.push({
           id: key,
           description: window.localStorage[key]
