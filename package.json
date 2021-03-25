@@ -36,6 +36,7 @@
     ]
   },
   "devDependencies": {
-    "@testing-library/react-hooks": "^5.1.0"
+    "@testing-library/react-hooks": "^5.1.0",
+    "fake-indexeddb": "^3.1.2"
   }
 }

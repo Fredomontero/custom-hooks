@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import indexedDB  from 'fake-indexeddb';
 
 export const useIndexDB = () => {
 
@@ -19,16 +20,16 @@ export const useIndexDB = () => {
     }
 
     transaction.oncomplete = (e) => {
-      console.log("TX COMPLETE: ", e);
+      console.log("TX COMPLETE: ");
       let tempData = [ ...data, {id: `data-${data.length}`, description: value} ];
       setData(tempData);
-      resolve(true)
+      resolve()
     }
   })
 
   //2) RETRIEVE FROM DB
-  const getData = () => {
-    console.log("GETDATA");
+  const getAll = () => new Promise((resolve, reject) => {
+    console.log("GETALLDATA");
     let tempData = [];
     const transaction = database.transaction(['todos'], 'readonly');
     const objectStore = transaction.objectStore('todos');
@@ -46,9 +47,14 @@ export const useIndexDB = () => {
       }else{
         console.log("No more data");
         setData(tempData);
+        resolve(tempData);
       }
     }
-  };
+
+    request.onerror = (err) => {
+      reject(err);
+    }
+  });
 
   //3) REMOVE FROM DB
   const remove = (key) => new Promise((resolve, reject) => {
@@ -68,9 +74,26 @@ export const useIndexDB = () => {
     }
   });
 
+  //4) GET FROM DB
+  const get = (key) => new Promise((resolve, reject) => {
+    console.log("GET");
+    const transaction = database.transaction(['todos'], 'readonly');
+    const objectStore = transaction.objectStore('todos');
+    const request = objectStore.get(key);
+
+    request.onerror = (event) => {
+      console.log(event.target.error);
+      reject();
+    }
+
+    request.onsuccess = (event) => {
+      resolve(request.result);
+    }
+  });
+
   const init = () => new Promise((resolve) => {
     console.log("INIT")
-    const request = window.indexedDB.open('database', 1);
+    const request = indexedDB.open('database', 1);
     
     request.onerror = () => console.error("ERROR", request.error);
     
@@ -84,7 +107,8 @@ export const useIndexDB = () => {
       console.log("OPEN");
       database = event.target.result;
       database.add = add;
-      database.getData = getData;
+      database.getAll = getAll;
+      database.get = get;
       database.remove = remove;
       // getData();
       // resolve({data, add, test});
